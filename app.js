@@ -30,25 +30,25 @@ var friends = new Promise ( (resolve, reject) => {
   })
 })
 
-// var tweets = function get_tweets() {
-//   T.get('statuses/user_timeline', {count: 5}, function(error, tweets, response) {
-//     if (error) {console.error(error)}
-//     var twts = tweets.map( function(tweet, index) {
-//       var new_tweet = {}
-//       new_tweet._id = index
-//       new_tweet.timestamp = tweet.created_at
-//       new_tweet.author_name = tweet.user.name
-//       new_tweet.user_id = "@" + tweet.user.screen_name
-//       new_tweet.avatar_img = tweet.user.profile_image_url
-//       new_tweet.text = tweet.text
-//       new_tweet.retweet_count = tweet.retweet_count
-//       new_tweet.like_count = tweet.favorite_count
-//       return new_tweet
-//     })
-//     // console.log(twts)
-//     return twts
-//   })
-// }
+var tweets = new Promise( (resolve, reject) => {
+  T.get('statuses/user_timeline', {count: 5}, function(error, tweets, response) {
+    if (error) {console.error(error)}
+    var twts = tweets.map( function(tweet, index) {
+      var new_tweet = {}
+      new_tweet._id = index
+      new_tweet.timestamp = tweet.created_at
+      new_tweet.author_name = tweet.user.name
+      new_tweet.user_id = "@" + tweet.user.screen_name
+      new_tweet.avatar_img = tweet.user.profile_image_url
+      new_tweet.text = tweet.text
+      new_tweet.retweet_count = tweet.retweet_count
+      new_tweet.like_count = tweet.favorite_count
+      return new_tweet
+    })
+    // console.log(twts)
+    resolve(twts)
+  })
+})
 //
 // function get_direct_messages_to_me() {
 //   T.get('direct_messages', {count: 5}, function(error, messages, response) {
@@ -86,6 +86,8 @@ var friends = new Promise ( (resolve, reject) => {
 
 //TODO: Combine the two get_direct_messages functions into a get_sorted_messages function
 
+promises = [friend_count, friends, tweets]
+
 console.log(typeof friend_count)
 
 app.set('view engine', 'pug')
@@ -93,8 +95,8 @@ app.set('views', __dirname +'/views')
 app.use(express.static('public'))
 
 app.get('/pug', function(req, res) {
-  friends.then( (friends) => {
-    res.render('template.pug', {friends: friends})
+  Promise.all(promises).then( (values) => {
+    res.render('template.pug', {friend_count: values[0], friends: values[1], tweets: values[2]})
   })
 })
 
