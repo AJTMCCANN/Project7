@@ -32,7 +32,7 @@ html(lang='en')
                 c-6.1-0.2-11.7-1.8-16.7-4.6c0,0.2,0,0.3,0,0.5C7.2,69.7,20,84.6,36.9,88c-3.1,0.8-6.4,1.3-9.7,1.3c-2.4,0-4.7-0.2-6.9-0.7\
                 c4.7,14.6,18.3,25.3,34.5,25.6C42,124.1,26.1,130,8.8,130c-3,0-5.9-0.2-8.8-0.5C16.3,139.9,35.8,146,56.6,146\
                 c67.9,0,105.1-56.2,105.1-104.9c0-1.6,0-3.2-0.1-4.8C168.8,31.2,175,24.7,180,17.3z')
-              h1 @earthtone_ninja
+              h1 #{'@' + screen_name}
           .circle--fluid--cell.align-right
             nav
               ul.circle--inline
@@ -44,10 +44,10 @@ html(lang='en')
           .circle--fluid--cell.circle--fluid--primary.align-bottom.app--tweet--post
             .app--avatar(style='background-image: url(images/m-spore.png)')
               img(src='images/m-spore.png')
-            textarea#tweet-textarea.circle--textarea--input(placeholder="What's happening?")
+            textarea#tweet-textarea.circle--textarea--input(placeholder="What's happening?" maxlength="140")
             strong#tweet-char.app--tweet--char 140
           .circle--fluid--cell.align-bottom
-            button.button-primary Tweet
+            button#tweet-btn.button-primary Tweet
     .bounds.app--body
       .app--section--header
         .grid-33
@@ -67,10 +67,10 @@ html(lang='en')
               li
                 strong.app--tweet--timestamp #{tweet.timestamp}
                 a.app--tweet--author
-                  .app--avatar(style='background-image: url(images/f-spore.png)')
+                  .app--avatar(style='background-image: url(' + tweet.avatar_img + ')')
                     img(src='images/f-spore.png')
                   h4 #{tweet.author_name}
-                  |  #{tweet.author_id}
+                  |  #{tweet.user_id}
                 p #{tweet.text}
                 ul.app--tweet--actions.circle--list--inline
                   li
@@ -106,7 +106,7 @@ html(lang='en')
                 .circle--fluid
                   .circle--fluid--cell.circle--fluid--primary
                     a.app--tweet--author
-                      .app--avatar(style='background-image: url(images/f-spore.png)')
+                      .app--avatar(style='background-image: url(' + friend.avatar_img + ')')
                         img(src='images/f-spore.png')
                       h4 #{friend.user_name}
                       p #{friend.user_id}
@@ -120,7 +120,9 @@ html(lang='en')
               ul.app--message--conversation
                 each message in messages
                   li(class=message.origin)
-                    .app--avatar(style='background-image: url(images/f-spore.png)')
+                    .app--avatar(style='background-image: url(' + message.avatar_img +')')
                       img(src='images/f-spore.png')
                     p.app--message--text #{message.text}
                     p.app--message--timestamp #{message.how_long_ago}
+      script(src='https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js')
+      script(src='./js/index.js')
