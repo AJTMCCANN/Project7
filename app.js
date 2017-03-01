@@ -1,58 +1,54 @@
-//TODO: Include personal background image from Twitter as the header background
-//TODO: Comment code
-//TODO: Combine friend_count and screen_name Promises
+//  Requires
 
-//TODO: Make it so that the page updates when you send a new tweet
-//TODO: Make it so that clicking a friend link takes you to their page
-//TODO: Make it so that clicking Unfollow unfollows the person, and updates the page
-//TODO: Make it so that clicking a tweet in the Timeline takes you to my userpage
+var moment = require("moment")
+var Twit = require("twit")
+var express = require("express")
+var bodyParser = require("body-parser")
 
-// Requires
-
-var moment = require('moment')
-var Twit = require('twit')
-var express = require('express')
-var bodyParser = require('body-parser')
-
-var CONFIG = require('./config.js')
+var CONFIG = require("./config.js")
 
 // Initialize
 
-var T = new Twit(CONFIG);
+var T = new Twit(CONFIG)
 var app = express()
 
 // View layer details
 
-app.set('view engine', 'pug')
-app.set('views', __dirname +'/views')
-
+app.set("view engine", "pug")
+app.set("views", __dirname +"/views")
 // serves the static assets
 
-app.use(express.static('public'))
+app.use(express.static("public"))
 
 // attaches the body object to the POST body request
 
 app.use(bodyParser.urlencoded({extended: true}))
 
+// Error handling middleware must be declared last
 
-
-
-
-
-var friend_count = new Promise( (resolve, reject) => {
-  T.get('users/show', {user_id: 15727386}, function(error, user, response) {
-    if (error) { reject(error) } else { resolve(user.friends_count) }
-  })
+app.use( (err, req, res, next) => {
+  res.status(500)
+  res.render("error.pug", { error: err })
 })
 
-var screen_name = new Promise( (resolve, reject) => {
-  T.get('users/show', {user_id: 15727386}, function(error, user, response) {
-    if (error) { reject(error) } else { resolve(user.screen_name) }
+//
+
+var user_info = new Promise( (resolve, reject) => {
+  T.get("users/show", {user_id: 15727386}, function(error, user) {
+    if (error) { reject(error) }
+    else {
+      var usr_inf = {}
+      usr_inf.friends_count = user.friends_count
+      usr_inf.screen_name = user.screen_name
+      usr_inf.background_img = user.profile_banner_url
+      usr_inf.avatar_img = user.profile_image_url
+      resolve(usr_inf)
+    }
   })
 })
 
 var friends = new Promise ( (resolve, reject) => {
-  T.get('friends/list', {count: 5}, function(error, friends, response) {
+  T.get("friends/list", {count: 5}, function(error, friends) {
     if (error) { reject(error) } else {
       var frnds = friends.users.map( function(friend, index) {
         var new_friend = {}
@@ -68,7 +64,7 @@ var friends = new Promise ( (resolve, reject) => {
 })
 
 var tweets = new Promise( (resolve, reject) => {
-  T.get('statuses/user_timeline', {count: 5}, function(error, tweets, response) {
+  T.get("statuses/user_timeline", {count: 5}, function(error, tweets) {
     if (error) { reject(error) } else {
       var twts = tweets.map( function(tweet, index) {
         var new_tweet = {}
@@ -88,7 +84,7 @@ var tweets = new Promise( (resolve, reject) => {
 })
 
 var direct_to_me = new Promise( (resolve, reject) => {
-  T.get('direct_messages', {count: 2}, function(error, messages, response) {
+  T.get("direct_messages", {count: 2}, function(error, messages) {
     if (error) { reject(error) } else {
       var msgs = messages.map( function(message, index) {
         var new_msg = {}
@@ -105,20 +101,20 @@ var direct_to_me = new Promise( (resolve, reject) => {
 })
 
 var direct_from_me = new Promise( (resolve, reject) => {
-    T.get('direct_messages/sent', {count: 3}, function(error, messages, response) {
-      if (error) { reject(error) } else {
-        var msgs = messages.map( function(message, index) {
-          var new_msg = {}
-          new_msg._id = index
-          new_msg.avatar_img = message.sender.profile_image_url
-          new_msg.text = message.text
-          new_msg.timestamp = message.created_at
-          new_msg.origin = "app--message--me"
-          return new_msg
-        })
-        resolve(msgs)
-      }
-    })
+  T.get("direct_messages/sent", {count: 3}, function(error, messages) {
+    if (error) { reject(error) } else {
+      var msgs = messages.map( function(message, index) {
+        var new_msg = {}
+        new_msg._id = index
+        new_msg.avatar_img = message.sender.profile_image_url
+        new_msg.text = message.text
+        new_msg.timestamp = message.created_at
+        new_msg.origin = "app--message--me"
+        return new_msg
+      })
+      resolve(msgs)
+    }
+  })
 })
 
 
@@ -126,37 +122,40 @@ var direct_msgs = new Promise( (resolve, reject) => {
   Promise.all([direct_to_me, direct_from_me]).then( (values) => {
     var all_msgs = values[0].concat(values[1])
     all_msgs.map( (msg, index) => {
-      how_long_ago = moment(msg.timestamp, "ddd MMM D HH:mm:ss ZZ YYYY").from(moment())
+      var how_long_ago = moment(msg.timestamp, "ddd MMM D HH:mm:ss ZZ YYYY").from(moment())
       msg["how_long_ago"] = how_long_ago
-      new_timestamp = parseInt(moment(msg.timestamp, "ddd MMM D HH:mm:ss ZZ YYYY").format("x"))
+      var new_timestamp = parseInt(moment(msg.timestamp, "ddd MMM D HH:mm:ss ZZ YYYY").format("x"))
       msg.timestamp = new_timestamp
       msg._id = index
       return msg
     })
-    sorted_msgs = all_msgs.sort((a,b) => {return (a.timestamp - b.timestamp)})
+    var sorted_msgs = all_msgs.sort((a,b) => {return (a.timestamp - b.timestamp)})
     resolve(sorted_msgs)
   }).catch( (error) => { reject(error) })
 })
 
-promises = [friend_count, friends, tweets, direct_msgs, screen_name]
+var promises = [user_info, friends, tweets, direct_msgs]
 
 // Routes
 
-app.get('/', function(req, res) {
+app.get("/", function(req, res) {
   Promise.all(promises).then( (values) => {
-    res.render('template.pug', {friend_count: values[0], friends: values[1], tweets: values[2], messages: values[3], screen_name: values[4]})
-  }).catch( (error) => { res.render('error.pug', {error: error}) })
+    res.render("template.pug", {user_info: values[0], friends: values[1], tweets: values[2], messages: values[3]})
+    values[2].forEach( (item, index) => {
+      console.log(index + " " + item.text)
+    })
+  }).catch( (error) => { res.render("error.pug", {error: error}) })
 })
 
-app.post('/send-tweet', function(req, res) {
-  T.post('statuses/update', {status: req.body.tweet}, function(err, data, response) {
-
+app.post("/send-tweet", function(req, res) {
+  T.post("statuses/update", {status: req.body.tweet}, function(error, data) {
+    if (error) { res.render("error.pug", {error: "Unable to post your tweet"}) }
+    else { res.send("tweeted \"" + req.body.tweet + "\"") }
   })
-  res.send('tweeted ' + req.body.tweet)
 })
 
-app.get('/error', function(req, res) {
-  //put stuff here
+app.get("*", function(req, res) {
+  res.render("error.pug", {error: "That page doesn't exist"})
 })
 
 app.listen(3000, function() {

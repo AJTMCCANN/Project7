@@ -14,5 +14,10 @@
     "moment": "^2.17.1",
     "pug": "^2.0.0-beta11",
     "twit": "^2.2.5"
+  },
+  "devDependencies": {
+    "eslint": "^3.16.1",
+    "eslint-config-google": "^0.7.1",
+    "eslint-plugin-react": "^6.10.0"
   }
 }
